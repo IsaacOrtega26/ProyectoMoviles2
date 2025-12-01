@@ -20,6 +20,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.arenamovil.ui.theme.ArenaMovilTheme
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import com.example.arenamovil.domain.Raza
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.example.arenamovil.domain.GameSession
+
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,11 +124,19 @@ fun HomeScreen(navController: NavHostController) {
  */
 @Composable
 fun SetupScreen(navController: NavHostController) {
+    var nombreJ1 by remember { mutableStateOf("") }
+    var nombreJ2 by remember { mutableStateOf("") }
+
+    var razaJ1 by remember { mutableStateOf(Raza.HUMANO) }
+    var razaJ2 by remember { mutableStateOf(Raza.HUMANO) }
+
+    val formularioValido = nombreJ1.isNotBlank() && nombreJ2.isNotBlank()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -125,16 +144,61 @@ fun SetupScreen(navController: NavHostController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
+        // ---- Jugador 1 ----
         Text(
-            text = "Aquí irán:\n" +
-                    "- Nombre Jugador 1 y raza\n" +
-                    "- Nombre Jugador 2 y raza\n" +
-                    "- Armas / elementos",
-            style = MaterialTheme.typography.bodyMedium
+            text = "Jugador 1",
+            style = MaterialTheme.typography.titleMedium
         )
 
-        Button(onClick = { navController.navigate(Screen.Battle.route) }) {
-            Text("Comenzar combate (placeholder)")
+        OutlinedTextField(
+            value = nombreJ1,
+            onValueChange = { nombreJ1 = it },
+            label = { Text("Nombre del jugador 1") },
+            singleLine = true
+        )
+
+        Text(text = "Raza jugador 1")
+        RazaSelector(
+            razaSeleccionada = razaJ1,
+            onRazaSeleccionada = { razaJ1 = it }
+        )
+
+        // ---- Jugador 2 ----
+        Text(
+            text = "Jugador 2",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        OutlinedTextField(
+            value = nombreJ2,
+            onValueChange = { nombreJ2 = it },
+            label = { Text("Nombre del jugador 2") },
+            singleLine = true
+        )
+
+        Text(text = "Raza jugador 2")
+        RazaSelector(
+            razaSeleccionada = razaJ2,
+            onRazaSeleccionada = { razaJ2 = it }
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = {
+                // Inicializamos el combate con los datos del formulario
+                GameSession.iniciarCombate(
+                    nombreJ1 = nombreJ1,
+                    razaJ1 = razaJ1,
+                    nombreJ2 = nombreJ2,
+                    razaJ2 = razaJ2
+                )
+
+                navController.navigate(Screen.Battle.route)
+            },
+            enabled = formularioValido
+        ) {
+            Text("Comenzar combate")
         }
 
         Button(onClick = { navController.popBackStack() }) {
@@ -143,17 +207,70 @@ fun SetupScreen(navController: NavHostController) {
     }
 }
 
+@Composable
+fun RazaSelector(
+    razaSeleccionada: Raza,
+    onRazaSeleccionada: (Raza) -> Unit
+) {
+    val razas = listOf(
+        Raza.HUMANO,
+        Raza.ELFO,
+        Raza.ORCO,
+        Raza.BESTIA
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        razas.forEach { raza ->
+            val seleccionado = raza == razaSeleccionada
+            val texto = when (raza) {
+                Raza.HUMANO -> "Humano"
+                Raza.ELFO -> "Elfo"
+                Raza.ORCO -> "Orco"
+                Raza.BESTIA -> "Bestia"
+            }
+
+            Button(
+                onClick = { onRazaSeleccionada(raza) },
+                enabled = !seleccionado
+            ) {
+                Text(texto)
+            }
+        }
+    }
+}
+
 /**
  * Pantalla de combate
- * Más adelante le metemos la lógica real.
  */
 @Composable
 fun BattleScreen(navController: NavHostController) {
+    val estado = GameSession.estadoCombate
+
+    if (estado == null) {
+        // Si entramos sin configuración previa, volvemos al inicio
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("No hay partida configurada.")
+            Button(onClick = { navController.navigate(Screen.Home.route) }) {
+                Text("Volver al inicio")
+            }
+        }
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -161,14 +278,16 @@ fun BattleScreen(navController: NavHostController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Text(
-            text = "Aquí se mostrarán:\n" +
-                    "- Vida de ambos jugadores\n" +
-                    "- Imagen de cada criatura\n" +
-                    "- Distancia (cerca / media / lejos)\n" +
-                    "- Turno actual",
-            style = MaterialTheme.typography.bodyMedium
-        )
+        // Info jugador 1
+        Text("Jugador 1: ${estado.jugador1.nombre} (${estado.jugador1.raza})")
+        Text("Vida J1: ${estado.vidaJugador1}")
+
+        // Info jugador 2
+        Text("Jugador 2: ${estado.jugador2.nombre} (${estado.jugador2.raza})")
+        Text("Vida J2: ${estado.vidaJugador2}")
+
+        Text("Distancia actual: ${estado.distancia.name}")
+        Text("Turno: ${if (estado.turnoJugador1) "Jugador 1" else "Jugador 2"}")
 
         Button(onClick = { /* luego: acción Atacar */ }) {
             Text("Atacar (placeholder)")
@@ -183,8 +302,11 @@ fun BattleScreen(navController: NavHostController) {
             Text("Curar (placeholder)")
         }
 
-        Button(onClick = { navController.navigate(Screen.Home.route) }) {
-            Text("Terminar combate (volver al inicio)")
+        Button(onClick = {
+            GameSession.limpiar()
+            navController.navigate(Screen.Home.route)
+        }) {
+            Text("Terminar combate")
         }
     }
 }
