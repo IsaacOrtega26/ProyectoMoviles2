@@ -29,6 +29,8 @@ import com.example.arenamovil.domain.Raza
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.example.arenamovil.domain.GameSession
+import com.example.arenamovil.domain.Distancia
+
 
 
 
@@ -212,45 +214,90 @@ fun RazaSelector(
     razaSeleccionada: Raza,
     onRazaSeleccionada: (Raza) -> Unit
 ) {
-    val razas = listOf(
-        Raza.HUMANO,
-        Raza.ELFO,
-        Raza.ORCO,
-        Raza.BESTIA
-    )
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        razas.forEach { raza ->
-            val seleccionado = raza == razaSeleccionada
-            val texto = when (raza) {
-                Raza.HUMANO -> "Humano"
-                Raza.ELFO -> "Elfo"
-                Raza.ORCO -> "Orco"
-                Raza.BESTIA -> "Bestia"
-            }
+        // Fila 1: Humano / Elfo
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RazaButton(
+                raza = Raza.HUMANO,
+                texto = "Humano",
+                razaSeleccionada = razaSeleccionada,
+                onRazaSeleccionada = onRazaSeleccionada,
+                modifier = Modifier.weight(1f)
+            )
 
-            Button(
-                onClick = { onRazaSeleccionada(raza) },
-                enabled = !seleccionado
-            ) {
-                Text(texto)
-            }
+            RazaButton(
+                raza = Raza.ELFO,
+                texto = "Elfo",
+                razaSeleccionada = razaSeleccionada,
+                onRazaSeleccionada = onRazaSeleccionada,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Fila 2: Orco / Bestia
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RazaButton(
+                raza = Raza.ORCO,
+                texto = "Orco",
+                razaSeleccionada = razaSeleccionada,
+                onRazaSeleccionada = onRazaSeleccionada,
+                modifier = Modifier.weight(1f)
+            )
+
+            RazaButton(
+                raza = Raza.BESTIA,
+                texto = "Bestia",
+                razaSeleccionada = razaSeleccionada,
+                onRazaSeleccionada = onRazaSeleccionada,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
+
+@Composable
+private fun RazaButton(
+    raza: Raza,
+    texto: String,
+    razaSeleccionada: Raza,
+    onRazaSeleccionada: (Raza) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val seleccionado = raza == razaSeleccionada
+
+    Button(
+        onClick = { onRazaSeleccionada(raza) },
+        enabled = !seleccionado,
+        modifier = modifier
+    ) {
+        Text(texto)
+    }
+}
+
 
 /**
  * Pantalla de combate
  */
 @Composable
 fun BattleScreen(navController: NavHostController) {
-    val estado = GameSession.estadoCombate
+    //Estado que observamos en Compose
+    var estado by remember {
+        mutableStateOf(GameSession.estadoCombate)
+    }
 
-    if (estado == null) {
-        // Si entramos sin configuración previa, volvemos al inicio
+    val estadoActual = estado
+
+    if (estadoActual == null) {
+        //Si no hay partida configurada, mandamos al inicio
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -266,6 +313,18 @@ fun BattleScreen(navController: NavHostController) {
         return
     }
 
+    val hayGanador = estadoActual.vidaJugador1 <= 0 || estadoActual.vidaJugador2 <= 0
+
+    val textoGanador = when {
+        estadoActual.vidaJugador1 <= 0 && estadoActual.vidaJugador2 <= 0 ->
+            "Empate"
+        estadoActual.vidaJugador2 <= 0 ->
+            "Ganó ${estadoActual.jugador1.nombre}"
+        estadoActual.vidaJugador1 <= 0 ->
+            "Ganó ${estadoActual.jugador2.nombre}"
+        else -> null
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -278,38 +337,83 @@ fun BattleScreen(navController: NavHostController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // Info jugador 1
-        Text("Jugador 1: ${estado.jugador1.nombre} (${estado.jugador1.raza})")
-        Text("Vida J1: ${estado.vidaJugador1}")
+        Text("Turno #${estadoActual.turnoActual}")
 
-        // Info jugador 2
-        Text("Jugador 2: ${estado.jugador2.nombre} (${estado.jugador2.raza})")
-        Text("Vida J2: ${estado.vidaJugador2}")
+        //Informacion del jugador 1
+        Text("Jugador 1: ${estadoActual.jugador1.nombre} (${estadoActual.jugador1.raza})")
+        Text("Vida J1: ${estadoActual.vidaJugador1}")
 
-        Text("Distancia actual: ${estado.distancia.name}")
-        Text("Turno: ${if (estado.turnoJugador1) "Jugador 1" else "Jugador 2"}")
+        // Informacion jugador 2
+        Text("Jugador 2: ${estadoActual.jugador2.nombre} (${estadoActual.jugador2.raza})")
+        Text("Vida J2: ${estadoActual.vidaJugador2}")
 
-        Button(onClick = { /* luego: acción Atacar */ }) {
-            Text("Atacar (placeholder)")
-        }
-        Button(onClick = { /* luego: acción Avanzar */ }) {
-            Text("Avanzar (placeholder)")
-        }
-        Button(onClick = { /* luego: acción Retroceder */ }) {
-            Text("Retroceder (placeholder)")
-        }
-        Button(onClick = { /* luego: acción Curar */ }) {
-            Text("Curar (placeholder)")
+        Text("Vida J1: ${estadoActual.vidaJugador1}")
+        Text("Vida J2: ${estadoActual.vidaJugador2}")
+
+        val textoDistancia = when (estadoActual.distancia) {
+            Distancia.CERCA -> "Cerca"
+            Distancia.MEDIA -> "Media"
+            Distancia.LEJOS -> "Lejos"
         }
 
-        Button(onClick = {
-            GameSession.limpiar()
-            navController.navigate(Screen.Home.route)
-        }) {
-            Text("Terminar combate")
+        Text("Distancia actual: $textoDistancia")
+
+        Text("Turno de: ${if (estadoActual.turnoJugador1) estadoActual.jugador1.nombre else estadoActual.jugador2.nombre}")
+        if (textoGanador != null) {
+            Text(
+                text = textoGanador,
+                style = MaterialTheme.typography.titleLarge
+            )
         }
+
+        //Botones de acción
+        Button(
+            onClick = {
+                GameSession.atacar()?.let { nuevo ->
+                    estado = nuevo
+                }
+            },
+            enabled = !hayGanador
+        ) {
+            Text("Atacar")
+        }
+
+        Button(
+            onClick = {
+                GameSession.avanzar()?.let { nuevo ->
+                    estado = nuevo
+                }
+            },
+            enabled = !hayGanador
+        ) {
+            Text("Avanzar")
+        }
+
+        Button(
+            onClick = {
+                GameSession.retroceder()?.let { nuevo ->
+                    estado = nuevo
+                }
+            },
+            enabled = !hayGanador
+        ) {
+            Text("Retroceder")
+        }
+
+        Button(
+            onClick = {
+                GameSession.curar()?.let { nuevo ->
+                    estado = nuevo
+                }
+            },
+            enabled = !hayGanador
+        ) {
+            Text("Curar")
+        }
+
     }
 }
+
 
 /**
  * Pantalla de estadísticas
