@@ -146,7 +146,7 @@ fun SetupScreen(navController: NavHostController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // ---- Jugador 1 ----
+        //Jugador 1
         Text(
             text = "Jugador 1",
             style = MaterialTheme.typography.titleMedium
@@ -165,7 +165,7 @@ fun SetupScreen(navController: NavHostController) {
             onRazaSeleccionada = { razaJ1 = it }
         )
 
-        // ---- Jugador 2 ----
+        //Jugador 2
         Text(
             text = "Jugador 2",
             style = MaterialTheme.typography.titleMedium
@@ -364,6 +364,22 @@ fun BattleScreen(navController: NavHostController) {
                 text = textoGanador,
                 style = MaterialTheme.typography.titleLarge
             )
+
+            //Boton para volver al inicio despues de terminar una partida
+            Button(onClick = {
+                GameSession.limpiar()
+                navController.navigate(Screen.Home.route)
+            }) {
+                Text("Volver al inicio")
+            }
+
+            //Boton para ver las estadísticas
+            Button(onClick = {
+                GameSession.limpiar()
+                navController.navigate(Screen.Stats.route)
+            }) {
+                Text("Ver estadísticas")
+            }
         }
 
         //Botones de acción
