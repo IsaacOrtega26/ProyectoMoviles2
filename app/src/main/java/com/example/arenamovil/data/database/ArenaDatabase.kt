@@ -40,12 +40,12 @@ abstract class ArenaDatabase : RoomDatabase() {
     private object DatabaseCallback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            // Aquí se agregan datos iniciales si asi se quiere
+            // Si quieren agregar datos iniciales, lo hacen aquí
         }
     }
 }
 
-//Convertidores personalizados
+//Convertidores Persnalizados
 class Converters {
 
     @TypeConverter
