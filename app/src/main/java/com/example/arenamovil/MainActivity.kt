@@ -30,6 +30,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.example.arenamovil.domain.GameSession
 import com.example.arenamovil.domain.Distancia
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.*
+import com.example.arenamovil.domain.*
+import com.example.arenamovil.data.database.ArenaDatabase
+import com.example.arenamovil.data.database.PartidaEntity
+import kotlinx.coroutines.launch
+import java.util.Date
+import androidx.compose.runtime.LaunchedEffect
+
+
+
+
 
 
 
@@ -289,15 +306,20 @@ private fun RazaButton(
  */
 @Composable
 fun BattleScreen(navController: NavHostController) {
-    //Estado que observamos en Compose
-    var estado by remember {
-        mutableStateOf(GameSession.estadoCombate)
-    }
+    val context = LocalContext.current
+    //val scope = rememberCoroutineScope()
+
+    //Lee el ROOM
+    val db = remember { ArenaDatabase.getDatabase(context) }
+    val partidaDao = remember { db.partidaDao() }
+
+    //Estado del combate
+    var estado by remember { mutableStateOf(GameSession.estadoCombate) }
+    var guardadoEnBD by remember { mutableStateOf(false) }
 
     val estadoActual = estado
 
     if (estadoActual == null) {
-        //Si no hay partida configurada, mandamos al inicio
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -325,6 +347,22 @@ fun BattleScreen(navController: NavHostController) {
         else -> null
     }
 
+    //Guardar automáticamente la partida cuando haya ganador (solo una vez)
+    LaunchedEffect(hayGanador) {
+        if (hayGanador && !guardadoEnBD && estadoActual != null) {
+            guardadoEnBD = true
+            val entidad = crearPartidaDesdeEstado(estadoActual)
+            partidaDao.insertPartida(entidad)
+        }
+    }
+
+
+    val textoDistancia = when (estadoActual.distancia) {
+        Distancia.CERCA -> "Cerca"
+        Distancia.MEDIA -> "Media"
+        Distancia.LEJOS -> "Lejos"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -339,33 +377,22 @@ fun BattleScreen(navController: NavHostController) {
 
         Text("Turno #${estadoActual.turnoActual}")
 
-        //Informacion del jugador 1
         Text("Jugador 1: ${estadoActual.jugador1.nombre} (${estadoActual.jugador1.raza})")
         Text("Vida J1: ${estadoActual.vidaJugador1}")
 
-        // Informacion jugador 2
         Text("Jugador 2: ${estadoActual.jugador2.nombre} (${estadoActual.jugador2.raza})")
         Text("Vida J2: ${estadoActual.vidaJugador2}")
 
-        Text("Vida J1: ${estadoActual.vidaJugador1}")
-        Text("Vida J2: ${estadoActual.vidaJugador2}")
-
-        val textoDistancia = when (estadoActual.distancia) {
-            Distancia.CERCA -> "Cerca"
-            Distancia.MEDIA -> "Media"
-            Distancia.LEJOS -> "Lejos"
-        }
-
         Text("Distancia actual: $textoDistancia")
-
         Text("Turno de: ${if (estadoActual.turnoJugador1) estadoActual.jugador1.nombre else estadoActual.jugador2.nombre}")
+
         if (textoGanador != null) {
             Text(
                 text = textoGanador,
                 style = MaterialTheme.typography.titleLarge
             )
 
-            //Boton para volver al inicio despues de terminar una partida
+            //Botones al terminar (ya está guardado en BD)
             Button(onClick = {
                 GameSession.limpiar()
                 navController.navigate(Screen.Home.route)
@@ -373,7 +400,6 @@ fun BattleScreen(navController: NavHostController) {
                 Text("Volver al inicio")
             }
 
-            //Boton para ver las estadísticas
             Button(onClick = {
                 GameSession.limpiar()
                 navController.navigate(Screen.Stats.route)
@@ -382,51 +408,56 @@ fun BattleScreen(navController: NavHostController) {
             }
         }
 
-        //Botones de acción
-        Button(
-            onClick = {
-                GameSession.atacar()?.let { nuevo ->
-                    estado = nuevo
+        //Botones de acción (solo si no hay ganador)
+        if (!hayGanador) {
+            Button(
+                onClick = {
+                    GameSession.atacar()?.let { nuevo ->
+                        estado = nuevo
+                    }
                 }
-            },
-            enabled = !hayGanador
-        ) {
-            Text("Atacar")
+            ) {
+                Text("Atacar")
+            }
+
+            Button(
+                onClick = {
+                    GameSession.avanzar()?.let { nuevo ->
+                        estado = nuevo
+                    }
+                }
+            ) {
+                Text("Avanzar")
+            }
+
+            Button(
+                onClick = {
+                    GameSession.retroceder()?.let { nuevo ->
+                        estado = nuevo
+                    }
+                }
+            ) {
+                Text("Retroceder")
+            }
+
+            Button(
+                onClick = {
+                    GameSession.curar()?.let { nuevo ->
+                        estado = nuevo
+                    }
+                }
+            ) {
+                Text("Curar")
+            }
         }
 
-        Button(
-            onClick = {
-                GameSession.avanzar()?.let { nuevo ->
-                    estado = nuevo
-                }
-            },
-            enabled = !hayGanador
-        ) {
-            Text("Avanzar")
+        //Botón de terminar combate manual (es una opcion opcional)
+        Button(onClick = {
+            GameSession.limpiar()
+            navController.navigate(Screen.Home.route)
+        }) {
+            Text("Terminar combate")
         }
-
-        Button(
-            onClick = {
-                GameSession.retroceder()?.let { nuevo ->
-                    estado = nuevo
-                }
-            },
-            enabled = !hayGanador
-        ) {
-            Text("Retroceder")
-        }
-
-        Button(
-            onClick = {
-                GameSession.curar()?.let { nuevo ->
-                    estado = nuevo
-                }
-            },
-            enabled = !hayGanador
-        ) {
-            Text("Curar")
-        }
-
     }
 }
 
@@ -461,3 +492,61 @@ fun StatsScreen(navController: NavHostController) {
         }
     }
 }
+
+private fun vidaInicialPorRaza(raza: Raza): Int =
+    when (raza) {
+        Raza.HUMANO -> 100
+        Raza.ELFO -> 100
+        Raza.ORCO -> 110
+        Raza.BESTIA -> 120
+    }
+
+private fun crearPartidaDesdeEstado(estado: EstadoCombate): PartidaEntity {
+    val vidaInicialJ1 = vidaInicialPorRaza(estado.jugador1.raza)
+    val vidaInicialJ2 = vidaInicialPorRaza(estado.jugador2.raza)
+
+    val esEmpate = estado.vidaJugador1 <= 0 && estado.vidaJugador2 <= 0
+
+    val ganadorNombre: String?
+    val ganadorRaza: Raza?
+
+    when {
+        esEmpate -> {
+            ganadorNombre = null
+            ganadorRaza = null
+        }
+        estado.vidaJugador2 <= 0 -> {
+            ganadorNombre = estado.jugador1.nombre
+            ganadorRaza = estado.jugador1.raza
+        }
+        else -> {
+            ganadorNombre = estado.jugador2.nombre
+            ganadorRaza = estado.jugador2.raza
+        }
+    }
+
+    val turnosTotales = (estado.turnoActual - 1).coerceAtLeast(1)
+
+    return PartidaEntity(
+        fecha = Date(),
+
+        jugador1Nombre = estado.jugador1.nombre,
+        jugador1Raza = estado.jugador1.raza,
+        jugador1VidaInicial = vidaInicialJ1,
+        jugador1VidaFinal = estado.vidaJugador1,
+
+        jugador2Nombre = estado.jugador2.nombre,
+        jugador2Raza = estado.jugador2.raza,
+        jugador2VidaInicial = vidaInicialJ2,
+        jugador2VidaFinal = estado.vidaJugador2,
+
+        turnosTotales = turnosTotales,
+        distanciaFinal = estado.distancia,
+        ganadorNombre = ganadorNombre,
+        ganadorRaza = ganadorRaza,
+        esEmpate = esEmpate
+    )
+}
+
+
+
