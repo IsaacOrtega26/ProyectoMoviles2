@@ -6,7 +6,6 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
 }
 
-
 //configuración principal del proyecto Android
 android {
     namespace = "com.example.arenamovil"
@@ -55,10 +54,10 @@ android {
 }
 //Todas las bibliotecas externas que el proyecto usara
 dependencies {
-    //BOM de Compose para que todas las librerias usen versiones compatibles
+    // BOM de Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
-    androidTestImplementation(composeBom) //integra compose con las actividades
+    androidTestImplementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
@@ -70,28 +69,27 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.2.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    //Navegación con Compose
+    // Navegación con Compose
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    //Tests (son los que ya vienen por defecto)
+    // Tests
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
-    // Room
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
+    // ===== IMPORTANTE: Solo una vez cada dependencia =====
 
-    //Para corrutinas
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-    // Room
+    // Room (sin duplicar)
     implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")  // Para corrutinas y Flow con Room
     kapt("androidx.room:room-compiler:2.6.1")
 
+    // Corrutinas (sin duplicar)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    // Para manejar Flows en Compose (AGREGA ESTO)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 }
 

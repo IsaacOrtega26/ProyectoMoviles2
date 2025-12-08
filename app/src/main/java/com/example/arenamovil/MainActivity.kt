@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -34,7 +35,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.ui.res.stringResource
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,9 +90,9 @@ object ImageResources {
     fun getRazaIcon(raza: Raza): ImageVector {
         return when (raza) {
             Raza.HUMANO -> Icons.Default.Person
-            Raza.ELFO -> Icons.Default.Forest
+            Raza.ELFO -> Icons.Default.Person
             Raza.ORCO -> Icons.Default.Warning
-            Raza.BESTIA -> Icons.Default.Pets
+            Raza.BESTIA -> Icons.Default.Star
         }
     }
 
@@ -240,14 +240,14 @@ private fun RazaCard(
 
     Card(
         onClick = { onRazaSeleccionada(raza) },
-        modifier = modifier,
+        modifier = modifier.then(
+            if (seleccionado) Modifier.border(2.dp, color, MaterialTheme.shapes.medium)
+            else Modifier
+        ),
         colors = CardDefaults.cardColors(
             containerColor = if (seleccionado) color.copy(alpha = 0.2f)
             else MaterialTheme.colorScheme.surfaceVariant
-        ),
-        border = if (seleccionado) CardDefaults.outlinedCardBorder(
-            border = BorderStroke(2.dp, color)
-        ) else null
+        )
     ) {
         Column(
             modifier = Modifier
@@ -284,7 +284,7 @@ fun HomeScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.SportsMma,
+            imageVector = Icons.Default.Person,
             contentDescription = "Arena Móvil",
             modifier = Modifier.size(80.dp),
             tint = MaterialTheme.colorScheme.primary
@@ -324,7 +324,7 @@ fun HomeScreen(navController: NavHostController) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.BarChart, contentDescription = "Estadísticas")
+                Icon(imageVector = Icons.Default.Info, contentDescription = "Estadísticas")
                 Text("Estadísticas")
             }
         }
@@ -357,7 +357,8 @@ fun SetupScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -474,7 +475,7 @@ fun SetupScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
@@ -494,7 +495,7 @@ fun SetupScreen(navController: NavHostController) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.SportsMma,
+                    imageVector = Icons.Default.Person,
                     contentDescription = "Comenzar combate"
                 )
                 Text("Comenzar combate")
@@ -670,7 +671,7 @@ fun BattleScreen(navController: NavHostController) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SportsMma,
+                        imageVector = Icons.Default.Person,
                         contentDescription = "Combate"
                     )
                     Text(
@@ -773,7 +774,7 @@ fun BattleScreen(navController: NavHostController) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.EmojiEvents,
+                            imageVector = Icons.Default.Star,
                             contentDescription = "Ganador",
                             tint = MaterialTheme.colorScheme.tertiary
                         )
@@ -893,7 +894,7 @@ fun BattleScreen(navController: NavHostController) {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.MilitaryTech,
+                                            imageVector = Icons.Default.Star,
                                             contentDescription = "Ganador",
                                             modifier = Modifier.size(20.dp),
                                             tint = MaterialTheme.colorScheme.primary
@@ -912,7 +913,7 @@ fun BattleScreen(navController: NavHostController) {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Handshake,
+                                            imageVector = Icons.Default.Person,
                                             contentDescription = "Empate",
                                             modifier = Modifier.size(20.dp),
                                             tint = MaterialTheme.colorScheme.secondary
@@ -932,7 +933,7 @@ fun BattleScreen(navController: NavHostController) {
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.CalendarToday,
+                                        imageVector = Icons.Default.Info,
                                         contentDescription = "Fecha",
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -980,7 +981,7 @@ fun BattleScreen(navController: NavHostController) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.BarChart, contentDescription = "Estadísticas")
+                                Icon(imageVector = Icons.Default.Info, contentDescription = "Estadísticas")
                                 Text("Ver más estadísticas")
                             }
                         }
@@ -1021,7 +1022,7 @@ fun BattleScreen(navController: NavHostController) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.SportsKabaddi, contentDescription = "Atacar")
+                                Icon(imageVector = Icons.Default.Person, contentDescription = "Atacar")
                                 Text("Atacar")
                             }
                         }
@@ -1038,7 +1039,7 @@ fun BattleScreen(navController: NavHostController) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.Healing, contentDescription = "Curar")
+                                Icon(imageVector = Icons.Default.Favorite, contentDescription = "Curar")
                                 Text("Curar")
                             }
                         }
@@ -1123,7 +1124,7 @@ fun StatsScreen(navController: NavHostController) {
     var partidas by remember { mutableStateOf<List<PartidaEntity>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        partidas = partidaDao.getAllPartidas()
+        partidas = partidaDao.getAllPartidasList()
     }
 
     Column(
@@ -1148,7 +1149,7 @@ fun StatsScreen(navController: NavHostController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Default.History,
+                        imageVector = Icons.Default.Info,
                         contentDescription = "Sin estadísticas",
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
