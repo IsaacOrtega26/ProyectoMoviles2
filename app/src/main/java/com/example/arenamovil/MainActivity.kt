@@ -3,53 +3,38 @@ package com.example.arenamovil
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.arenamovil.ui.theme.ArenaMovilTheme
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import com.example.arenamovil.domain.Raza
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.example.arenamovil.domain.GameSession
-import com.example.arenamovil.domain.Distancia
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.*
-import com.example.arenamovil.domain.*
 import com.example.arenamovil.data.database.ArenaDatabase
 import com.example.arenamovil.data.database.PartidaEntity
-import kotlinx.coroutines.launch
-import java.util.Date
-import androidx.compose.runtime.LaunchedEffect
-
-
-
-
-
-
-
+import com.example.arenamovil.domain.*
+import com.example.arenamovil.ui.theme.ArenaMovilTheme
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,7 +52,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//Rutas para la app
+// Rutas para la app
 sealed class Screen(val route: String) {
     data object Home : Screen("Inicio")
     data object Setup : Screen("Configuracion")
@@ -75,9 +60,6 @@ sealed class Screen(val route: String) {
     data object Stats : Screen("Estadísticas")
 }
 
-/*Raíz de la app con NavHost, es el contenedor de navegación de Compose
-Con el NavHost se lleva el control de en que pantalla estara el usuario
-*/
 @Composable
 fun ArenaMovilApp() {
     val navController = rememberNavController()
@@ -101,9 +83,197 @@ fun ArenaMovilApp() {
     }
 }
 
-/**
- * Pantalla de Inicio
- */
+// ============ RECURSOS DE IMÁGENES PARA PERSONAJES ============
+object ImageResources {
+
+    @Composable
+    fun getRazaIcon(raza: Raza): ImageVector {
+        return when (raza) {
+            Raza.HUMANO -> Icons.Default.Person
+            Raza.ELFO -> Icons.Default.Person
+            Raza.ORCO -> Icons.Default.Warning
+            Raza.BESTIA -> Icons.Default.Star
+        }
+    }
+
+    @Composable
+    fun getRazaColor(raza: Raza): Color {
+        return when (raza) {
+            Raza.HUMANO -> Color(0xFF4CAF50)  // Verde
+            Raza.ELFO -> Color(0xFF2196F3)    // Azul
+            Raza.ORCO -> Color(0xFFF44336)    // Rojo
+            Raza.BESTIA -> Color(0xFF9C27B0)  // Púrpura
+        }
+    }
+
+    // Íconos para estados
+    val vidaIcon: ImageVector = Icons.Default.Favorite
+    val turnoIcon: ImageVector = Icons.Default.Refresh
+    val distanciaIcon: ImageVector = Icons.Default.LocationOn
+}
+
+// ============ COMPONENTES REUTILIZABLES ============
+@Composable
+fun PersonajeAvatar(
+    raza: Raza,
+    nombre: String,
+    vida: Int,
+    esTurno: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = if (esTurno)
+                MaterialTheme.colorScheme.secondaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = if (esTurno) CardDefaults.cardElevation(8.dp)
+        else CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Imagen del personaje
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        ImageResources.getRazaColor(raza).copy(alpha = 0.2f),
+                        shape = MaterialTheme.shapes.extraLarge
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = ImageResources.getRazaIcon(raza),
+                    contentDescription = "Personaje $nombre",
+                    modifier = Modifier.size(40.dp),
+                    tint = ImageResources.getRazaColor(raza)
+                )
+            }
+
+            // Nombre del personaje
+            Text(
+                text = nombre,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Raza
+            Text(
+                text = raza.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = ImageResources.getRazaColor(raza)
+            )
+
+            // Barra de vida
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageResources.vidaIcon,
+                        contentDescription = "Vida",
+                        modifier = Modifier.size(16.dp),
+                        tint = when {
+                            vida > 70 -> Color.Green
+                            vida > 30 -> Color.Yellow
+                            else -> Color.Red
+                        }
+                    )
+                    Text(
+                        text = "$vida HP",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                LinearProgressIndicator(
+                    progress = vida / 100f,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    color = when {
+                        vida > 70 -> Color.Green
+                        vida > 30 -> Color.Yellow
+                        else -> Color.Red
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+
+            // Indicador de turno
+            if (esTurno) {
+                Text(
+                    text = "⚔️ TURNO ACTUAL",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RazaCard(
+    raza: Raza,
+    razaSeleccionada: Raza,
+    onRazaSeleccionada: (Raza) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val seleccionado = raza == razaSeleccionada
+    val color = ImageResources.getRazaColor(raza)
+    val icono = ImageResources.getRazaIcon(raza)
+    val nombre = when (raza) {
+        Raza.HUMANO -> "Humano"
+        Raza.ELFO -> "Elfo"
+        Raza.ORCO -> "Orco"
+        Raza.BESTIA -> "Bestia"
+    }
+
+    Card(
+        onClick = { onRazaSeleccionada(raza) },
+        modifier = modifier.then(
+            if (seleccionado) Modifier.border(2.dp, color, MaterialTheme.shapes.medium)
+            else Modifier
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (seleccionado) color.copy(alpha = 0.2f)
+            else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = icono,
+                contentDescription = nombre,
+                modifier = Modifier.size(32.dp),
+                tint = color
+            )
+
+            Text(
+                text = nombre,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (seleccionado) FontWeight.Bold
+                else FontWeight.Normal
+            )
+        }
+    }
+}
+
+// ============ PANTALLAS ============
 @Composable
 fun HomeScreen(navController: NavHostController) {
     Column(
@@ -113,6 +283,13 @@ fun HomeScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = "Arena Móvil",
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+
         Text(
             text = "Arena Móvil",
             style = MaterialTheme.typography.headlineLarge
@@ -120,27 +297,53 @@ fun HomeScreen(navController: NavHostController) {
 
         Text(
             text = "Duelo de criaturas por turnos.\nElige tu raza y lucha hasta el final.",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
         )
 
-        Button(onClick = { navController.navigate(Screen.Setup.route) }) {
-            Text("Nueva partida")
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = { navController.navigate(Screen.Setup.route) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = "Nueva partida")
+                Text("Nueva partida")
+            }
         }
 
-        Button(onClick = { navController.navigate(Screen.Stats.route) }) {
-            Text("Estadísticas")
+        Button(
+            onClick = { navController.navigate(Screen.Stats.route) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(imageVector = Icons.Default.Info, contentDescription = "Estadísticas")
+                Text("Estadísticas")
+            }
         }
 
-        Button(onClick = { /* más adelante: créditos / acerca de */ }) {
-            Text("Acerca de")
+        Button(
+            onClick = { /* más adelante: créditos / acerca de */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Info, contentDescription = "Acerca de")
+                Text("Acerca de")
+            }
         }
     }
 }
 
-/**
- * Pantalla de configuración de partida
- * (por ahora solo texto y navegación)
- */
 @Composable
 fun SetupScreen(navController: NavHostController) {
     var nombreJ1 by remember { mutableStateOf("") }
@@ -154,7 +357,8 @@ fun SetupScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -163,71 +367,161 @@ fun SetupScreen(navController: NavHostController) {
             style = MaterialTheme.typography.headlineMedium
         )
 
-        //Jugador 1
-        Text(
-            text = "Jugador 1",
-            style = MaterialTheme.typography.titleMedium
-        )
+        // Jugador 1
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Avatar del jugador 1
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(
+                                ImageResources.getRazaColor(razaJ1).copy(alpha = 0.2f),
+                                shape = MaterialTheme.shapes.extraLarge
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = ImageResources.getRazaIcon(razaJ1),
+                            contentDescription = "Jugador 1",
+                            modifier = Modifier.size(30.dp),
+                            tint = ImageResources.getRazaColor(razaJ1)
+                        )
+                    }
 
-        OutlinedTextField(
-            value = nombreJ1,
-            onValueChange = { nombreJ1 = it },
-            label = { Text("Nombre del jugador 1") },
-            singleLine = true
-        )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Jugador 1",
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
-        Text(text = "Raza jugador 1")
-        RazaSelector(
-            razaSeleccionada = razaJ1,
-            onRazaSeleccionada = { razaJ1 = it }
-        )
+                        OutlinedTextField(
+                            value = nombreJ1,
+                            onValueChange = { nombreJ1 = it },
+                            label = { Text("Nombre del jugador 1") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
 
-        //Jugador 2
-        Text(
-            text = "Jugador 2",
-            style = MaterialTheme.typography.titleMedium
-        )
+                Text(text = "Selecciona la raza:", style = MaterialTheme.typography.bodyMedium)
+                RazaSelectorConImagen(
+                    razaSeleccionada = razaJ1,
+                    onRazaSeleccionada = { razaJ1 = it }
+                )
+            }
+        }
 
-        OutlinedTextField(
-            value = nombreJ2,
-            onValueChange = { nombreJ2 = it },
-            label = { Text("Nombre del jugador 2") },
-            singleLine = true
-        )
+        // Jugador 2
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Avatar del jugador 2
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(
+                                ImageResources.getRazaColor(razaJ2).copy(alpha = 0.2f),
+                                shape = MaterialTheme.shapes.extraLarge
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = ImageResources.getRazaIcon(razaJ2),
+                            contentDescription = "Jugador 2",
+                            modifier = Modifier.size(30.dp),
+                            tint = ImageResources.getRazaColor(razaJ2)
+                        )
+                    }
 
-        Text(text = "Raza jugador 2")
-        RazaSelector(
-            razaSeleccionada = razaJ2,
-            onRazaSeleccionada = { razaJ2 = it }
-        )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Jugador 2",
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
-        Spacer(modifier = Modifier.weight(1f))
+                        OutlinedTextField(
+                            value = nombreJ2,
+                            onValueChange = { nombreJ2 = it },
+                            label = { Text("Nombre del jugador 2") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                Text(text = "Selecciona la raza:", style = MaterialTheme.typography.bodyMedium)
+                RazaSelectorConImagen(
+                    razaSeleccionada = razaJ2,
+                    onRazaSeleccionada = { razaJ2 = it }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                // Inicializamos el combate con los datos del formulario
                 GameSession.iniciarCombate(
                     nombreJ1 = nombreJ1,
                     razaJ1 = razaJ1,
                     nombreJ2 = nombreJ2,
                     razaJ2 = razaJ2
                 )
-
                 navController.navigate(Screen.Battle.route)
             },
-            enabled = formularioValido
+            enabled = formularioValido,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Comenzar combate")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Comenzar combate"
+                )
+                Text("Comenzar combate")
+            }
         }
 
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Volver")
+        Button(
+            onClick = { navController.popBackStack() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Volver"
+                )
+                Text("Volver")
+            }
         }
     }
 }
 
 @Composable
-fun RazaSelector(
+fun RazaSelectorConImagen(
     razaSeleccionada: Raza,
     onRazaSeleccionada: (Raza) -> Unit
 ) {
@@ -240,17 +534,15 @@ fun RazaSelector(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RazaButton(
+            RazaCard(
                 raza = Raza.HUMANO,
-                texto = "Humano",
                 razaSeleccionada = razaSeleccionada,
                 onRazaSeleccionada = onRazaSeleccionada,
                 modifier = Modifier.weight(1f)
             )
 
-            RazaButton(
+            RazaCard(
                 raza = Raza.ELFO,
-                texto = "Elfo",
                 razaSeleccionada = razaSeleccionada,
                 onRazaSeleccionada = onRazaSeleccionada,
                 modifier = Modifier.weight(1f)
@@ -262,17 +554,15 @@ fun RazaSelector(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RazaButton(
+            RazaCard(
                 raza = Raza.ORCO,
-                texto = "Orco",
                 razaSeleccionada = razaSeleccionada,
                 onRazaSeleccionada = onRazaSeleccionada,
                 modifier = Modifier.weight(1f)
             )
 
-            RazaButton(
+            RazaCard(
                 raza = Raza.BESTIA,
-                texto = "Bestia",
                 razaSeleccionada = razaSeleccionada,
                 onRazaSeleccionada = onRazaSeleccionada,
                 modifier = Modifier.weight(1f)
@@ -282,32 +572,9 @@ fun RazaSelector(
 }
 
 @Composable
-private fun RazaButton(
-    raza: Raza,
-    texto: String,
-    razaSeleccionada: Raza,
-    onRazaSeleccionada: (Raza) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val seleccionado = raza == razaSeleccionada
-
-    Button(
-        onClick = { onRazaSeleccionada(raza) },
-        enabled = !seleccionado,
-        modifier = modifier
-    ) {
-        Text(texto)
-    }
-}
-
-
-/**
- * Pantalla de combate
- */
-@Composable
 fun BattleScreen(navController: NavHostController) {
     val context = LocalContext.current
-    //val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
     //Lee el ROOM
     val db = remember { ArenaDatabase.getDatabase(context) }
@@ -316,6 +583,7 @@ fun BattleScreen(navController: NavHostController) {
     //Estado del combate
     var estado by remember { mutableStateOf(GameSession.estadoCombate) }
     var guardadoEnBD by remember { mutableStateOf(false) }
+    var partidaGuardada by remember { mutableStateOf<PartidaEntity?>(null) }
 
     val estadoActual = estado
 
@@ -327,9 +595,23 @@ fun BattleScreen(navController: NavHostController) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Sin partida",
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text("No hay partida configurada.")
+            Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = { navController.navigate(Screen.Home.route) }) {
-                Text("Volver al inicio")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Home, contentDescription = "Inicio")
+                    Text("Volver al inicio")
+                }
             }
         }
         return
@@ -339,23 +621,25 @@ fun BattleScreen(navController: NavHostController) {
 
     val textoGanador = when {
         estadoActual.vidaJugador1 <= 0 && estadoActual.vidaJugador2 <= 0 ->
-            "Empate"
+            "¡Empate!"
         estadoActual.vidaJugador2 <= 0 ->
-            "Ganó ${estadoActual.jugador1.nombre}"
+            "¡Ganó ${estadoActual.jugador1.nombre}!"
         estadoActual.vidaJugador1 <= 0 ->
-            "Ganó ${estadoActual.jugador2.nombre}"
+            "¡Ganó ${estadoActual.jugador2.nombre}!"
         else -> null
     }
 
-    //Guardar automáticamente la partida cuando haya ganador (solo una vez)
+    //Guardar automáticamente la partida cuando haya ganador
     LaunchedEffect(hayGanador) {
         if (hayGanador && !guardadoEnBD && estadoActual != null) {
             guardadoEnBD = true
             val entidad = crearPartidaDesdeEstado(estadoActual)
-            partidaDao.insertPartida(entidad)
+            partidaGuardada = entidad
+            scope.launch {
+                partidaDao.insertPartida(entidad)
+            }
         }
     }
-
 
     val textoDistancia = when (estadoActual.distancia) {
         Distancia.CERCA -> "Cerca"
@@ -366,129 +650,710 @@ fun BattleScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Combate",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text("Turno #${estadoActual.turnoActual}")
-
-        Text("Jugador 1: ${estadoActual.jugador1.nombre} (${estadoActual.jugador1.raza})")
-        Text("Vida J1: ${estadoActual.vidaJugador1}")
-
-        Text("Jugador 2: ${estadoActual.jugador2.nombre} (${estadoActual.jugador2.raza})")
-        Text("Vida J2: ${estadoActual.vidaJugador2}")
-
-        Text("Distancia actual: $textoDistancia")
-        Text("Turno de: ${if (estadoActual.turnoJugador1) estadoActual.jugador1.nombre else estadoActual.jugador2.nombre}")
-
-        if (textoGanador != null) {
-            Text(
-                text = textoGanador,
-                style = MaterialTheme.typography.titleLarge
+        // Encabezado del combate
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
             )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Combate"
+                    )
+                    Text(
+                        text = "Combate",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
 
-            //Botones al terminar (ya está guardado en BD)
-            Button(onClick = {
-                GameSession.limpiar()
-                navController.navigate(Screen.Home.route)
-            }) {
-                Text("Volver al inicio")
-            }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageResources.turnoIcon,
+                        contentDescription = "Turno",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Turno #${estadoActual.turnoActual}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
 
-            Button(onClick = {
-                GameSession.limpiar()
-                navController.navigate(Screen.Stats.route)
-            }) {
-                Text("Ver estadísticas")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = ImageResources.distanciaIcon,
+                        contentDescription = "Distancia",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Distancia: $textoDistancia",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
 
-        //Botones de acción (solo si no hay ganador)
+        // Panel de jugadores
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Jugador 1
+            PersonajeAvatar(
+                raza = estadoActual.jugador1.raza,
+                nombre = estadoActual.jugador1.nombre,
+                vida = estadoActual.vidaJugador1,
+                esTurno = estadoActual.turnoJugador1,
+                modifier = Modifier.weight(1f)
+            )
+
+            // VS en el medio
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        MaterialTheme.colorScheme.secondary,
+                        shape = MaterialTheme.shapes.medium
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "VS",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Jugador 2
+            PersonajeAvatar(
+                raza = estadoActual.jugador2.raza,
+                nombre = estadoActual.jugador2.nombre,
+                vida = estadoActual.vidaJugador2,
+                esTurno = !estadoActual.turnoJugador1,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Resultado del combate CON ESTADÍSTICAS
+        if (textoGanador != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Ganador",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Text(
+                            text = textoGanador,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+
+                    // ESTADÍSTICAS DE LA PARTIDA
+                    if (partidaGuardada != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "📊 Estadísticas de la Partida",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                // Información de los jugadores
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.Start
+                                    ) {
+                                        Text(
+                                            text = "Jugador 1:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            text = partidaGuardada!!.jugador1Nombre,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "Vida final: ${partidaGuardada!!.jugador1VidaFinal}",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+
+                                    Column(
+                                        horizontalAlignment = Alignment.End
+                                    ) {
+                                        Text(
+                                            text = "Jugador 2:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            text = partidaGuardada!!.jugador2Nombre,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "Vida final: ${partidaGuardada!!.jugador2VidaFinal}",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+
+                                Divider()
+
+                                // Detalles del combate
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Turnos totales:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            text = partidaGuardada!!.turnosTotales.toString(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "Distancia final:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                        Text(
+                                            text = when (partidaGuardada!!.distanciaFinal) {
+                                                Distancia.CERCA -> "Cerca"
+                                                Distancia.MEDIA -> "Media"
+                                                Distancia.LEJOS -> "Lejos"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+
+                                // Información del ganador
+                                if (partidaGuardada!!.ganadorNombre != null) {
+                                    Divider()
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = "Ganador",
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "Ganador: ${partidaGuardada!!.ganadorNombre}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                } else {
+                                    Divider()
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Empate",
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                        Text(
+                                            text = "Empate",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                }
+
+                                // Fecha de la partida
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Fecha",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                            .format(partidaGuardada!!.fecha),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                GameSession.limpiar()
+                                navController.navigate(Screen.Home.route)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.Home, contentDescription = "Inicio")
+                                Text("Volver al inicio")
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                GameSession.limpiar()
+                                navController.navigate(Screen.Stats.route)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Info, contentDescription = "Estadísticas")
+                                Text("Ver más estadísticas")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Botones de acción (solo si no hay ganador)
+        if (!hayGanador) {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Acciones disponibles",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    // Fila 1: Atacar y Curar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                GameSession.atacar()?.let { nuevo ->
+                                    estado = nuevo
+                                }
+                            },
+                            enabled = estadoActual.distancia != Distancia.LEJOS,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Person, contentDescription = "Atacar")
+                                Text("Atacar")
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                GameSession.curar()?.let { nuevo ->
+                                    estado = nuevo
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Favorite, contentDescription = "Curar")
+                                Text("Curar")
+                            }
+                        }
+                    }
+
+                    // Fila 2: Avanzar y Retroceder
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                GameSession.avanzar()?.let { nuevo ->
+                                    estado = nuevo
+                                }
+                            },
+                            enabled = estadoActual.distancia != Distancia.CERCA,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Avanzar")
+                                Text("Avanzar")
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                GameSession.retroceder()?.let { nuevo ->
+                                    estado = nuevo
+                                }
+                            },
+                            enabled = estadoActual.distancia != Distancia.LEJOS,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Retroceder")
+                                Text("Retroceder")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Botón para terminar el combate (solo si no hay ganador)
         if (!hayGanador) {
             Button(
                 onClick = {
-                    GameSession.atacar()?.let { nuevo ->
-                        estado = nuevo
-                    }
-                }
+                    GameSession.limpiar()
+                    navController.navigate(Screen.Home.route)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
             ) {
-                Text("Atacar")
-            }
-
-            Button(
-                onClick = {
-                    GameSession.avanzar()?.let { nuevo ->
-                        estado = nuevo
-                    }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.ExitToApp, contentDescription = "Terminar")
+                    Text("Terminar combate")
                 }
-            ) {
-                Text("Avanzar")
             }
-
-            Button(
-                onClick = {
-                    GameSession.retroceder()?.let { nuevo ->
-                        estado = nuevo
-                    }
-                }
-            ) {
-                Text("Retroceder")
-            }
-
-            Button(
-                onClick = {
-                    GameSession.curar()?.let { nuevo ->
-                        estado = nuevo
-                    }
-                }
-            ) {
-                Text("Curar")
-            }
-        }
-
-        //Botón de terminar combate manual (es una opcion opcional)
-        Button(onClick = {
-            GameSession.limpiar()
-            navController.navigate(Screen.Home.route)
-        }) {
-            Text("Terminar combate")
         }
     }
 }
 
-
-/**
- * Pantalla de estadísticas
- */
 @Composable
 fun StatsScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    val db = remember { ArenaDatabase.getDatabase(context) }
+    val partidaDao = remember { db.partidaDao() }
+
+    var partidas by remember { mutableStateOf<List<PartidaEntity>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        partidas = partidaDao.getAllPartidasList()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "Estadísticas",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
         )
 
-        Text(
-            text = "Aquí mostraremos:\n" +
-                    "- Partidas ganadas / perdidas\n" +
-                    "- Raza más usada\n" +
-                    "- Últimas partidas",
-            style = MaterialTheme.typography.bodyMedium
-        )
+        if (partidas.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Sin estadísticas",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No hay estadísticas disponibles",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "¡Juega algunas partidas para ver estadísticas!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            // Estadísticas generales
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Resumen General",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
 
-        Button(onClick = { navController.popBackStack() }) {
-            Text("Volver")
+                    // Contador de partidas
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Total de partidas:")
+                        Text(
+                            text = partidas.size.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Contador de victorias por raza
+                    val victoriasPorRaza = partidas
+                        .filter { it.ganadorNombre != null }
+                        .groupBy { it.ganadorRaza }
+                        .mapValues { it.value.size }
+
+                    if (victoriasPorRaza.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Victorias por raza:",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        victoriasPorRaza.forEach { (raza, victorias) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(raza?.toString() ?: "Desconocido")
+                                Text("$victorias victorias")
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Historial de partidas
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Historial de Partidas",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(partidas.take(10).reversed()) { partida ->
+                            PartidaHistoryItem(partida = partida)
+                        }
+                    }
+
+                    if (partidas.size > 10) {
+                        Text(
+                            text = "... y ${partidas.size - 10} partidas más",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = FontStyle.Italic,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = { navController.popBackStack() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                Text("Volver")
+            }
+        }
+    }
+}
+
+@Composable
+fun PartidaHistoryItem(partida: PartidaEntity) {
+    val fechaFormateada = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        .format(partida.fecha)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Información de los jugadores
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = partida.jugador1Nombre,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = partida.jugador1Raza.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+
+                Text("VS", style = MaterialTheme.typography.labelMedium)
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = partida.jugador2Nombre,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = partida.jugador2Raza.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            // Resultado
+            Text(
+                text = if (partida.esEmpate) {
+                    "Empate"
+                } else if (partida.ganadorNombre == partida.jugador1Nombre) {
+                    "Ganador: ${partida.jugador1Nombre}"
+                } else {
+                    "Ganador: ${partida.jugador2Nombre}"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Detalles adicionales
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Turnos: ${partida.turnosTotales}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                Text(
+                    text = fechaFormateada,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }
@@ -547,6 +1412,3 @@ private fun crearPartidaDesdeEstado(estado: EstadoCombate): PartidaEntity {
         esEmpate = esEmpate
     )
 }
-
-
-
