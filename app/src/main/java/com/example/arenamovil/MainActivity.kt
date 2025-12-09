@@ -58,6 +58,7 @@ sealed class Screen(val route: String) {
     data object Setup : Screen("Configuracion")
     data object Battle : Screen("Batalla")
     data object Stats : Screen("Estadísticas")
+    data object Historial : Screen("Historial")
 }
 
 @Composable
@@ -79,6 +80,9 @@ fun ArenaMovilApp() {
         }
         composable(Screen.Stats.route) {
             StatsScreen(navController)
+        }
+        composable(Screen.Historial.route) {
+            HistorialScreen(navController)
         }
     }
 }
@@ -330,15 +334,15 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         Button(
-            onClick = { /* más adelante: créditos / acerca de */ },
+            onClick = { navController.navigate(Screen.Historial.route) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Info, contentDescription = "Acerca de")
-                Text("Acerca de")
+                Icon(Icons.Default.Info, contentDescription = "Historial")
+                Text("Historial de Partidas")
             }
         }
     }
@@ -352,7 +356,29 @@ fun SetupScreen(navController: NavHostController) {
     var razaJ1 by remember { mutableStateOf(Raza.HUMANO) }
     var razaJ2 by remember { mutableStateOf(Raza.HUMANO) }
 
+    var armaJ1 by remember { mutableStateOf<Any?>(ArmaHumano.ESCOPETA) }
+    var armaJ2 by remember { mutableStateOf<Any?>(ArmaHumano.ESCOPETA) }
+
     val formularioValido = nombreJ1.isNotBlank() && nombreJ2.isNotBlank()
+
+    // Actualizar arma por defecto cuando cambia la raza
+    LaunchedEffect(razaJ1) {
+        armaJ1 = when (razaJ1) {
+            Raza.HUMANO -> ArmaHumano.ESCOPETA
+            Raza.ELFO -> ElementoElfo.FUEGO
+            Raza.ORCO -> ArmaOrco.HACHA
+            Raza.BESTIA -> AtaqueBestia.ESPADA
+        }
+    }
+
+    LaunchedEffect(razaJ2) {
+        armaJ2 = when (razaJ2) {
+            Raza.HUMANO -> ArmaHumano.ESCOPETA
+            Raza.ELFO -> ElementoElfo.FUEGO
+            Raza.ORCO -> ArmaOrco.HACHA
+            Raza.BESTIA -> AtaqueBestia.ESPADA
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -418,6 +444,81 @@ fun SetupScreen(navController: NavHostController) {
                     razaSeleccionada = razaJ1,
                     onRazaSeleccionada = { razaJ1 = it }
                 )
+
+                // Selector de arma/habilidad según la raza
+                Text(text = "Selecciona arma/habilidad:", style = MaterialTheme.typography.bodyMedium)
+                when (razaJ1) {
+                    Raza.HUMANO -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = armaJ1 == ArmaHumano.ESCOPETA,
+                                onClick = { armaJ1 = ArmaHumano.ESCOPETA },
+                                label = { Text("Escopeta") }
+                            )
+                            FilterChip(
+                                selected = armaJ1 == ArmaHumano.RIFLE_FRANCOTIRADOR,
+                                onClick = { armaJ1 = ArmaHumano.RIFLE_FRANCOTIRADOR },
+                                label = { Text("Rifle") }
+                            )
+                        }
+                    }
+                    Raza.ELFO -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = armaJ1 == ElementoElfo.FUEGO,
+                                    onClick = { armaJ1 = ElementoElfo.FUEGO },
+                                    label = { Text("Fuego") }
+                                )
+                                FilterChip(
+                                    selected = armaJ1 == ElementoElfo.TIERRA,
+                                    onClick = { armaJ1 = ElementoElfo.TIERRA },
+                                    label = { Text("Tierra") }
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = armaJ1 == ElementoElfo.AIRE,
+                                    onClick = { armaJ1 = ElementoElfo.AIRE },
+                                    label = { Text("Aire") }
+                                )
+                                FilterChip(
+                                    selected = armaJ1 == ElementoElfo.AGUA,
+                                    onClick = { armaJ1 = ElementoElfo.AGUA },
+                                    label = { Text("Agua") }
+                                )
+                            }
+                        }
+                    }
+                    Raza.ORCO -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = armaJ1 == ArmaOrco.HACHA,
+                                onClick = { armaJ1 = ArmaOrco.HACHA },
+                                label = { Text("Hacha") }
+                            )
+                            FilterChip(
+                                selected = armaJ1 == ArmaOrco.MARTILLO,
+                                onClick = { armaJ1 = ArmaOrco.MARTILLO },
+                                label = { Text("Martillo") }
+                            )
+                        }
+                    }
+                    Raza.BESTIA -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = armaJ1 == AtaqueBestia.PUÑOS,
+                                onClick = { armaJ1 = AtaqueBestia.PUÑOS },
+                                label = { Text("Puños") }
+                            )
+                            FilterChip(
+                                selected = armaJ1 == AtaqueBestia.ESPADA,
+                                onClick = { armaJ1 = AtaqueBestia.ESPADA },
+                                label = { Text("Espada") }
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -472,6 +573,81 @@ fun SetupScreen(navController: NavHostController) {
                     razaSeleccionada = razaJ2,
                     onRazaSeleccionada = { razaJ2 = it }
                 )
+
+                // Selector de arma/habilidad según la raza
+                Text(text = "Selecciona arma/habilidad:", style = MaterialTheme.typography.bodyMedium)
+                when (razaJ2) {
+                    Raza.HUMANO -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = armaJ2 == ArmaHumano.ESCOPETA,
+                                onClick = { armaJ2 = ArmaHumano.ESCOPETA },
+                                label = { Text("Escopeta") }
+                            )
+                            FilterChip(
+                                selected = armaJ2 == ArmaHumano.RIFLE_FRANCOTIRADOR,
+                                onClick = { armaJ2 = ArmaHumano.RIFLE_FRANCOTIRADOR },
+                                label = { Text("Rifle") }
+                            )
+                        }
+                    }
+                    Raza.ELFO -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = armaJ2 == ElementoElfo.FUEGO,
+                                    onClick = { armaJ2 = ElementoElfo.FUEGO },
+                                    label = { Text("Fuego") }
+                                )
+                                FilterChip(
+                                    selected = armaJ2 == ElementoElfo.TIERRA,
+                                    onClick = { armaJ2 = ElementoElfo.TIERRA },
+                                    label = { Text("Tierra") }
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = armaJ2 == ElementoElfo.AIRE,
+                                    onClick = { armaJ2 = ElementoElfo.AIRE },
+                                    label = { Text("Aire") }
+                                )
+                                FilterChip(
+                                    selected = armaJ2 == ElementoElfo.AGUA,
+                                    onClick = { armaJ2 = ElementoElfo.AGUA },
+                                    label = { Text("Agua") }
+                                )
+                            }
+                        }
+                    }
+                    Raza.ORCO -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = armaJ2 == ArmaOrco.HACHA,
+                                onClick = { armaJ2 = ArmaOrco.HACHA },
+                                label = { Text("Hacha") }
+                            )
+                            FilterChip(
+                                selected = armaJ2 == ArmaOrco.MARTILLO,
+                                onClick = { armaJ2 = ArmaOrco.MARTILLO },
+                                label = { Text("Martillo") }
+                            )
+                        }
+                    }
+                    Raza.BESTIA -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = armaJ2 == AtaqueBestia.PUÑOS,
+                                onClick = { armaJ2 = AtaqueBestia.PUÑOS },
+                                label = { Text("Puños") }
+                            )
+                            FilterChip(
+                                selected = armaJ2 == AtaqueBestia.ESPADA,
+                                onClick = { armaJ2 = AtaqueBestia.ESPADA },
+                                label = { Text("Espada") }
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -483,7 +659,9 @@ fun SetupScreen(navController: NavHostController) {
                     nombreJ1 = nombreJ1,
                     razaJ1 = razaJ1,
                     nombreJ2 = nombreJ2,
-                    razaJ2 = razaJ2
+                    razaJ2 = razaJ2,
+                    armaJ1 = armaJ1,
+                    armaJ2 = armaJ2
                 )
                 navController.navigate(Screen.Battle.route)
             },
@@ -584,6 +762,7 @@ fun BattleScreen(navController: NavHostController) {
     var estado by remember { mutableStateOf(GameSession.estadoCombate) }
     var guardadoEnBD by remember { mutableStateOf(false) }
     var partidaGuardada by remember { mutableStateOf<PartidaEntity?>(null) }
+    var mostrarSeleccionArma by remember { mutableStateOf(false) }
 
     val estadoActual = estado
 
@@ -622,10 +801,13 @@ fun BattleScreen(navController: NavHostController) {
     val textoGanador = when {
         estadoActual.vidaJugador1 <= 0 && estadoActual.vidaJugador2 <= 0 ->
             "¡Empate!"
+
         estadoActual.vidaJugador2 <= 0 ->
             "¡Ganó ${estadoActual.jugador1.nombre}!"
+
         estadoActual.vidaJugador1 <= 0 ->
             "¡Ganó ${estadoActual.jugador2.nombre}!"
+
         else -> null
     }
 
@@ -636,7 +818,13 @@ fun BattleScreen(navController: NavHostController) {
             val entidad = crearPartidaDesdeEstado(estadoActual)
             partidaGuardada = entidad
             scope.launch {
-                partidaDao.insertPartida(entidad)
+                try {
+                    partidaDao.insertPartida(entidad)
+                    println("DEBUG: Partida guardada exitosamente en BD")
+                } catch (e: Exception) {
+                    println("DEBUG: Error al guardar partida: ${e.message}")
+                    e.printStackTrace()
+                }
             }
         }
     }
@@ -815,7 +1003,9 @@ fun BattleScreen(navController: NavHostController) {
                                         Text(
                                             text = "Jugador 1:",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.7f
+                                            )
                                         )
                                         Text(
                                             text = partidaGuardada!!.jugador1Nombre,
@@ -834,7 +1024,9 @@ fun BattleScreen(navController: NavHostController) {
                                         Text(
                                             text = "Jugador 2:",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.7f
+                                            )
                                         )
                                         Text(
                                             text = partidaGuardada!!.jugador2Nombre,
@@ -859,7 +1051,9 @@ fun BattleScreen(navController: NavHostController) {
                                         Text(
                                             text = "Turnos totales:",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.7f
+                                            )
                                         )
                                         Text(
                                             text = partidaGuardada!!.turnosTotales.toString(),
@@ -872,7 +1066,9 @@ fun BattleScreen(navController: NavHostController) {
                                         Text(
                                             text = "Distancia final:",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.7f
+                                            )
                                         )
                                         Text(
                                             text = when (partidaGuardada!!.distanciaFinal) {
@@ -940,7 +1136,10 @@ fun BattleScreen(navController: NavHostController) {
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                        text = SimpleDateFormat(
+                                            "dd/MM/yyyy HH:mm",
+                                            Locale.getDefault()
+                                        )
                                             .format(partidaGuardada!!.fecha),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -981,7 +1180,10 @@ fun BattleScreen(navController: NavHostController) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(imageVector = Icons.Default.Info, contentDescription = "Estadísticas")
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Estadísticas"
+                                )
                                 Text("Ver más estadísticas")
                             }
                         }
@@ -1004,134 +1206,340 @@ fun BattleScreen(navController: NavHostController) {
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    // Fila 1: Atacar y Curar
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                GameSession.atacar()?.let { nuevo ->
-                                    estado = nuevo
-                                }
-                            },
-                            enabled = estadoActual.distancia != Distancia.LEJOS,
-                            modifier = Modifier.weight(1f)
+                    // Mostrar selección de arma si está activa
+                    if (mostrarSeleccionArma) {
+                        val jugadorActual =
+                            if (estadoActual.turnoJugador1) estadoActual.jugador1 else estadoActual.jugador2
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(imageVector = Icons.Default.Person, contentDescription = "Atacar")
-                                Text("Atacar")
+                                Text(
+                                    text = "Selecciona arma/habilidad:",
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                when (jugadorActual.raza) {
+                                    Raza.HUMANO -> {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(
+                                                onClick = {
+                                                    GameSession.atacarConArma(ArmaHumano.ESCOPETA)
+                                                        ?.let { nuevo ->
+                                                            estado = nuevo
+                                                            mostrarSeleccionArma = false
+                                                        }
+                                                },
+                                                enabled = estadoActual.distancia != Distancia.LEJOS,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Escopeta")
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    GameSession.atacarConArma(ArmaHumano.RIFLE_FRANCOTIRADOR)
+                                                        ?.let { nuevo ->
+                                                            estado = nuevo
+                                                            mostrarSeleccionArma = false
+                                                        }
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Rifle")
+                                            }
+                                        }
+                                    }
+
+                                    Raza.ELFO -> {
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Button(
+                                                    onClick = {
+                                                        GameSession.atacarConArma(ElementoElfo.FUEGO)
+                                                            ?.let { nuevo ->
+                                                                estado = nuevo
+                                                                mostrarSeleccionArma = false
+                                                            }
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Fuego")
+                                                }
+                                                Button(
+                                                    onClick = {
+                                                        GameSession.atacarConArma(ElementoElfo.TIERRA)
+                                                            ?.let { nuevo ->
+                                                                estado = nuevo
+                                                                mostrarSeleccionArma = false
+                                                            }
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Tierra")
+                                                }
+                                            }
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Button(
+                                                    onClick = {
+                                                        GameSession.atacarConArma(ElementoElfo.AIRE)
+                                                            ?.let { nuevo ->
+                                                                estado = nuevo
+                                                                mostrarSeleccionArma = false
+                                                            }
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Aire")
+                                                }
+                                                Button(
+                                                    onClick = {
+                                                        GameSession.atacarConArma(ElementoElfo.AGUA)
+                                                            ?.let { nuevo ->
+                                                                estado = nuevo
+                                                                mostrarSeleccionArma = false
+                                                            }
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Agua")
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Raza.ORCO -> {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(
+                                                onClick = {
+                                                    GameSession.atacarConArma(ArmaOrco.HACHA)
+                                                        ?.let { nuevo ->
+                                                            estado = nuevo
+                                                            mostrarSeleccionArma = false
+                                                        }
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Hacha")
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    GameSession.atacarConArma(ArmaOrco.MARTILLO)
+                                                        ?.let { nuevo ->
+                                                            estado = nuevo
+                                                            mostrarSeleccionArma = false
+                                                        }
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Martillo")
+                                            }
+                                        }
+                                    }
+
+                                    Raza.BESTIA -> {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(
+                                                onClick = {
+                                                    GameSession.atacarConArma(AtaqueBestia.PUÑOS)
+                                                        ?.let { nuevo ->
+                                                            estado = nuevo
+                                                            mostrarSeleccionArma = false
+                                                        }
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Puños")
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    GameSession.atacarConArma(AtaqueBestia.ESPADA)
+                                                        ?.let { nuevo ->
+                                                            estado = nuevo
+                                                            mostrarSeleccionArma = false
+                                                        }
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Espada")
+                                            }
+                                        }
+                                    }
+                                }
+                                Button(
+                                    onClick = { mostrarSeleccionArma = false },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Cancelar")
+                                }
+                            }
+                        }
+                    } else {
+                        // Fila 1: Atacar y Curar
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    mostrarSeleccionArma = true
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Atacar"
+                                    )
+                                    Text("Atacar")
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    GameSession.curar()?.let { nuevo ->
+                                        estado = nuevo
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite,
+                                        contentDescription = "Curar"
+                                    )
+                                    Text("Curar")
+                                }
                             }
                         }
 
-                        Button(
-                            onClick = {
-                                GameSession.curar()?.let { nuevo ->
-                                    estado = nuevo
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
+                        // Fila 2: Avanzar y Retroceder
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            Button(
+                                onClick = {
+                                    GameSession.avanzar()?.let { nuevo ->
+                                        estado = nuevo
+                                    }
+                                },
+                                enabled = estadoActual.distancia != Distancia.CERCA,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(imageVector = Icons.Default.Favorite, contentDescription = "Curar")
-                                Text("Curar")
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ArrowForward,
+                                        contentDescription = "Avanzar"
+                                    )
+                                    Text("Avanzar")
+                                }
                             }
-                        }
-                    }
 
-                    // Fila 2: Avanzar y Retroceder
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                GameSession.avanzar()?.let { nuevo ->
-                                    estado = nuevo
-                                }
-                            },
-                            enabled = estadoActual.distancia != Distancia.CERCA,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            Button(
+                                onClick = {
+                                    GameSession.retroceder()?.let { nuevo ->
+                                        estado = nuevo
+                                    }
+                                },
+                                enabled = estadoActual.distancia != Distancia.LEJOS,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(Icons.Default.ArrowForward, contentDescription = "Avanzar")
-                                Text("Avanzar")
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                GameSession.retroceder()?.let { nuevo ->
-                                    estado = nuevo
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ArrowBack,
+                                        contentDescription = "Retroceder"
+                                    )
+                                    Text("Retroceder")
                                 }
-                            },
-                            enabled = estadoActual.distancia != Distancia.LEJOS,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Retroceder")
-                                Text("Retroceder")
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Botón para terminar el combate (solo si no hay ganador)
-        if (!hayGanador) {
-            Button(
-                onClick = {
-                    GameSession.limpiar()
-                    navController.navigate(Screen.Home.route)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
-                )
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Botón para terminar el combate (solo si no hay ganador)
+            if (!hayGanador) {
+                Button(
+                    onClick = {
+                        GameSession.limpiar()
+                        navController.navigate(Screen.Home.route)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 ) {
-                    Icon(Icons.Default.ExitToApp, contentDescription = "Terminar")
-                    Text("Terminar combate")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Terminar")
+                        Text("Terminar combate")
+                    }
                 }
             }
         }
     }
 }
 
+// ============ PANTALLA DE ESTADÍSTICAS SIMPLIFICADA ============
 @Composable
 fun StatsScreen(navController: NavHostController) {
     val context = LocalContext.current
-    val db = remember { ArenaDatabase.getDatabase(context) }
-    val partidaDao = remember { db.partidaDao() }
-
     var partidas by remember { mutableStateOf<List<PartidaEntity>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        partidas = partidaDao.getAllPartidasList()
+        println("DEBUG: Iniciando carga de estadísticas")
+        try {
+            isLoading = true
+            errorMessage = null
+
+            // Usar withContext para manejar mejor las excepciones
+            withContext(Dispatchers.IO) {
+                println("DEBUG: Obteniendo base de datos...")
+                val db = ArenaDatabase.getDatabase(context)
+                println("DEBUG: Base de datos obtenida")
+                val partidaDao = db.partidaDao()
+                println("DEBUG: DAO obtenido")
+                partidas = partidaDao.getAllPartidasList()
+                println("DEBUG: Partidas cargadas: ${partidas.size}")
+            }
+
+        } catch (e: Exception) {
+            println("DEBUG: ERROR al cargar estadísticas: ${e.message}")
+            e.printStackTrace()
+            errorMessage = "Error al cargar datos: ${e.message}"
+            partidas = emptyList()
+        } finally {
+            isLoading = false
+            println("DEBUG: Carga finalizada")
+        }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
@@ -1140,30 +1548,60 @@ fun StatsScreen(navController: NavHostController) {
             fontWeight = FontWeight.Bold
         )
 
-        if (partidas.isEmpty()) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Cargando estadísticas...")
+                }
+            }
+        } else if (errorMessage != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = "Error",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage ?: "Error desconocido",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else if (partidas.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier.padding(32.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Sin estadísticas",
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        Icons.Default.Info,
+                        contentDescription = "Sin datos",
+                        modifier = Modifier.size(48.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("No hay estadísticas disponibles")
                     Text(
-                        text = "No hay estadísticas disponibles",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = "¡Juega algunas partidas para ver estadísticas!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
+                        "Juega algunas partidas para ver estadísticas",
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
@@ -1174,55 +1612,47 @@ fun StatsScreen(navController: NavHostController) {
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Resumen General",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Contador de partidas
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Total de partidas:")
                         Text(
                             text = partidas.size.toString(),
-                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
-                    // Contador de victorias por raza
-                    val victoriasPorRaza = partidas
-                        .filter { it.ganadorNombre != null }
-                        .groupBy { it.ganadorRaza }
-                        .mapValues { it.value.size }
+                    val victorias = partidas.count { it.ganadorNombre != null }
+                    val empates = partidas.count { it.esEmpate }
 
-                    if (victoriasPorRaza.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Victorias por raza:",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        victoriasPorRaza.forEach { (raza, victorias) ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(raza?.toString() ?: "Desconocido")
-                                Text("$victorias victorias")
-                            }
-                        }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Victorias:")
+                        Text("$victorias")
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Empates:")
+                        Text("$empates")
                     }
                 }
             }
 
-            // Historial de partidas
+            // Últimas partidas (máximo 5)
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -1231,22 +1661,21 @@ fun StatsScreen(navController: NavHostController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Historial de Partidas",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "Últimas Partidas",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(partidas.take(10).reversed()) { partida ->
-                            PartidaHistoryItem(partida = partida)
+                    partidas.take(5).reversed().forEachIndexed { index, partida ->
+                        SimplePartidaItem(partida = partida)
+                        if (index < partidas.size - 1 && index < 4) {
+                            Divider()
                         }
                     }
 
-                    if (partidas.size > 10) {
+                    if (partidas.size > 5) {
                         Text(
-                            text = "... y ${partidas.size - 10} partidas más",
+                            text = "... y ${partidas.size - 5} partidas más",
                             style = MaterialTheme.typography.bodySmall,
                             fontStyle = FontStyle.Italic,
                             textAlign = TextAlign.Center,
@@ -1268,28 +1697,158 @@ fun StatsScreen(navController: NavHostController) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                Text("Volver")
+                Text("Volver al inicio")
             }
         }
     }
 }
 
+// ============ PANTALLA DE HISTORIAL SIMPLIFICADA ============
 @Composable
-fun PartidaHistoryItem(partida: PartidaEntity) {
-    val fechaFormateada = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-        .format(partida.fecha)
+fun HistorialScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    var partidas by remember { mutableStateOf<List<PartidaEntity>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(Unit) {
+        println("DEBUG: Iniciando carga de historial")
+        try {
+            isLoading = true
+            errorMessage = null
+
+            withContext(Dispatchers.IO) {
+                val db = ArenaDatabase.getDatabase(context)
+                val partidaDao = db.partidaDao()
+                partidas = partidaDao.getAllPartidasList()
+                println("DEBUG: Historial cargado: ${partidas.size} partidas")
+            }
+
+        } catch (e: Exception) {
+            println("DEBUG: ERROR al cargar historial: ${e.message}")
+            e.printStackTrace()
+            errorMessage = "Error al cargar historial: ${e.message}"
+            partidas = emptyList()
+        } finally {
+            isLoading = false
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+            }
+            Text(
+                text = "Historial Completo",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Cargando historial...")
+                }
+            }
+        } else if (errorMessage != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = "Error",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage ?: "Error desconocido",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else if (partidas.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Sin datos",
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("No hay partidas registradas")
+                    Text(
+                        "Juega algunas partidas para ver el historial",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(partidas.reversed()) { partida ->
+                    SimplePartidaItem(partida = partida)
+                }
+            }
+        }
+    }
+}
+
+// ============ COMPONENTES AUXILIARES ============
+@Composable
+fun SimplePartidaItem(partida: PartidaEntity) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { },
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Información de los jugadores
+            // Fecha
+            Text(
+                text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    .format(partida.fecha),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+
+            // Jugadores
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1298,67 +1857,80 @@ fun PartidaHistoryItem(partida: PartidaEntity) {
                 Column {
                     Text(
                         text = partida.jugador1Nombre,
-                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = partida.jugador1Raza.toString(),
+                        text = "${partida.jugador1VidaFinal} HP",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = when {
+                            partida.jugador1VidaFinal > 70 -> Color.Green
+                            partida.jugador1VidaFinal > 30 -> Color.Yellow
+                            else -> Color.Red
+                        }
                     )
                 }
 
-                Text("VS", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    text = "VS",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = partida.jugador2Nombre,
-                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = partida.jugador2Raza.toString(),
+                        text = "${partida.jugador2VidaFinal} HP",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = when {
+                            partida.jugador2VidaFinal > 70 -> Color.Green
+                            partida.jugador2VidaFinal > 30 -> Color.Yellow
+                            else -> Color.Red
+                        }
                     )
                 }
             }
 
             // Resultado
-            Text(
-                text = if (partida.esEmpate) {
-                    "Empate"
-                } else if (partida.ganadorNombre == partida.jugador1Nombre) {
-                    "Ganador: ${partida.jugador1Nombre}"
-                } else {
-                    "Ganador: ${partida.jugador2Nombre}"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            // Detalles adicionales
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = "Turnos: ${partida.turnosTotales}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    style = MaterialTheme.typography.labelSmall
                 )
-                Text(
-                    text = fechaFormateada,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
+
+                if (partida.ganadorNombre != null) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Text(
+                            text = "Ganador: ${partida.ganadorNombre}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                } else {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ) {
+                        Text(
+                            text = "Empate",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-private fun vidaInicialPorRaza(raza: Raza): Int =
+// ============ FUNCIONES HELPER ============
+fun vidaInicialPorRaza(raza: Raza): Int =
     when (raza) {
         Raza.HUMANO -> 100
         Raza.ELFO -> 100
@@ -1366,7 +1938,7 @@ private fun vidaInicialPorRaza(raza: Raza): Int =
         Raza.BESTIA -> 120
     }
 
-private fun crearPartidaDesdeEstado(estado: EstadoCombate): PartidaEntity {
+fun crearPartidaDesdeEstado(estado: EstadoCombate): PartidaEntity {
     val vidaInicialJ1 = vidaInicialPorRaza(estado.jugador1.raza)
     val vidaInicialJ2 = vidaInicialPorRaza(estado.jugador2.raza)
 
@@ -1394,17 +1966,14 @@ private fun crearPartidaDesdeEstado(estado: EstadoCombate): PartidaEntity {
 
     return PartidaEntity(
         fecha = Date(),
-
         jugador1Nombre = estado.jugador1.nombre,
         jugador1Raza = estado.jugador1.raza,
         jugador1VidaInicial = vidaInicialJ1,
         jugador1VidaFinal = estado.vidaJugador1,
-
         jugador2Nombre = estado.jugador2.nombre,
         jugador2Raza = estado.jugador2.raza,
         jugador2VidaInicial = vidaInicialJ2,
         jugador2VidaFinal = estado.vidaJugador2,
-
         turnosTotales = turnosTotales,
         distanciaFinal = estado.distancia,
         ganadorNombre = ganadorNombre,
