@@ -24,8 +24,9 @@ abstract class ArenaDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): ArenaDatabase {
             return Instance ?: synchronized(this) {
+                val applicationContext = context.applicationContext
                 Room.databaseBuilder(
-                    context,
+                    applicationContext,
                     ArenaDatabase::class.java,
                     "arena_database"
                 )
